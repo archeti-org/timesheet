@@ -208,9 +208,7 @@ class Sheet(models.Model):
         else:
             check = check_not_in
 
-        sheets = self.search([]).filtered(
-            lambda sheet: check(sheet._get_possible_reviewers())
-        )
+        sheets = self.filtered(lambda sheet: check(sheet._get_possible_reviewers()))
         return Domain("id", "in", sheets.ids)
 
     @api.depends("name", "employee_id")
@@ -484,9 +482,9 @@ class Sheet(models.Model):
                 raise UserError(
                     employee.env._(
                         "In order to create a sheet for this employee, you must"
-                        " link him/her to an user: %s"
+                        " link him/her to an user: %s",
+                        employee.name,
                     )
-                    % (employee.name,)
                 )
             return employee.user_id.id
         return False
