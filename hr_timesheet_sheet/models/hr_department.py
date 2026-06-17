@@ -14,20 +14,18 @@ class HrDepartment(models.Model):
     )
 
     def _compute_timesheet_to_approve(self):
-        timesheet_data = self.env["hr_timesheet.sheet"].read_group(
-            Domain.AND(
+        timesheet_data = self.env["hr_timesheet.sheet"]._read_group(
+            domain=Domain.AND(
                 [
                     Domain("department_id", "in", self.ids),
                     Domain("state", "=", "confirm"),
                 ]
             ),
-            ["department_id"],
-            ["department_id"],
+            groupby=["department_id"],
+            aggregates=["department_id:count"],
         )
-        result = {
-            data["department_id"][0]: data["department_id_count"]
-            for data in timesheet_data
-        }
+        # timesheet data contains a list of (department_id: count_for_department_id)
+        result = {data[0].id: data[1] for data in timesheet_data}
         for department in self:
             department.timesheet_sheet_to_approve_count = result.get(department.id, 0)
 
