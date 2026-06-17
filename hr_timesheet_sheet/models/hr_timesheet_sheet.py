@@ -11,7 +11,8 @@ from datetime import datetime, time
 import babel.dates
 from dateutil.relativedelta import SU, relativedelta
 
-from odoo import SUPERUSER_ID, api, fields, models
+from odoo import api, fields, models
+from odoo.api import SUPERUSER_ID
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 
