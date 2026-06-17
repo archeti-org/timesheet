@@ -13,6 +13,7 @@ from dateutil.relativedelta import SU, relativedelta
 
 from odoo import SUPERUSER_ID, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Domain
 
 _logger = logging.getLogger(__name__)
 
@@ -48,7 +49,12 @@ class Sheet(models.Model):
     def _default_employee(self):
         company = self.env.company
         return self.env["hr.employee"].search(
-            [("user_id", "=", self.env.uid), ("company_id", "in", [company.id, False])],
+            Domain.AND(
+                [
+                    Domain("user_id", "=", self.env.uid),
+                    Domain("company_id", "in", [company.id, False]),
+                ]
+            ),
             limit=1,
             order="company_id ASC",
         )
@@ -204,7 +210,7 @@ class Sheet(models.Model):
         sheets = self.search([]).filtered(
             lambda sheet: check(sheet._get_possible_reviewers())
         )
-        return [("id", "in", sheets.ids)]
+        return Domain("id", "in", sheets.ids)
 
     @api.depends("name", "employee_id")
     def _compute_complete_name(self):
@@ -234,13 +240,15 @@ class Sheet(models.Model):
     def _get_overlapping_sheet_domain(self):
         """Hook for extensions"""
         self.ensure_one()
-        return [
-            ("id", "!=", self.id),
-            ("date_start", "<=", self.date_end),
-            ("date_end", ">=", self.date_start),
-            ("employee_id", "=", self.employee_id.id),
-            ("company_id", "=", self._get_timesheet_sheet_company().id),
-        ]
+        return Domain.AND(
+            [
+                Domain("id", "!=", self.id),
+                Domain("date_start", "<=", self.date_end),
+                Domain("date_end", ">=", self.date_start),
+                Domain("employee_id", "=", self.employee_id.id),
+                Domain("company_id", "=", self._get_timesheet_sheet_company().id),
+            ]
+        )
 
     @api.constrains(
         "date_start", "date_end", "company_id", "employee_id", "review_policy"
@@ -349,14 +357,16 @@ class Sheet(models.Model):
 
     def _get_timesheet_sheet_lines_domain(self):
         self.ensure_one()
-        return [
-            ("date", "<=", self.date_end),
-            ("date", ">=", self.date_start),
-            ("employee_id", "=", self.employee_id.id),
-            ("company_id", "=", self._get_timesheet_sheet_company().id),
-            ("project_id", "!=", False),
-            ("sheet_id", "in", [self.id, False]),
-        ]
+        return Domain.AND(
+            [
+                Domain("date", "<=", self.date_end),
+                Domain("date", ">=", self.date_start),
+                Domain("employee_id", "=", self.employee_id.id),
+                Domain("company_id", "=", self._get_timesheet_sheet_company().id),
+                Domain("project_id", "!=", False),
+                Domain("sheet_id", "in", [self.id, False]),
+            ]
+        )
 
     @api.depends(
         "date_start",
@@ -452,11 +462,15 @@ class Sheet(models.Model):
         for rec in self:
             if rec.add_line_project_id:
                 rec.available_task_ids = project_task_obj.search(
-                    [
-                        ("project_id", "=", rec.add_line_project_id.id),
-                        ("company_id", "in", [rec.company_id.id, False]),
-                        ("id", "not in", rec.timesheet_ids.mapped("task_id").ids),
-                    ]
+                    Domain.AND(
+                        [
+                            Domain("project_id", "=", rec.add_line_project_id.id),
+                            Domain("company_id", "in", [rec.company_id.id, False]),
+                            Domain(
+                                "id", "not in", rec.timesheet_ids.mapped("task_id").ids
+                            ),
+                        ]
+                    )
                 ).ids
             else:
                 rec.available_task_ids = []
@@ -575,7 +589,7 @@ class Sheet(models.Model):
     @api.model
     def _get_current_reviewer(self):
         reviewer = self.env["hr.employee"].search(
-            [("user_id", "=", self.env.uid)], limit=1
+            Domain("user_id", "=", self.env.uid), limit=1
         )
         if not reviewer:
             raise UserError(

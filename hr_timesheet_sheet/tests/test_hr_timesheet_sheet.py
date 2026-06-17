@@ -9,6 +9,7 @@ from dateutil.relativedelta import relativedelta
 
 from odoo import fields
 from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Domain
 from odoo.tests import Form, new_test_user
 from odoo.tools import mute_logger
 
@@ -23,7 +24,7 @@ class TestHrTimesheetSheetCommon(BaseCommon):
         super().setUpClass()
         # Remove global leaves from other modules to avoid test interference
         cls.env["resource.calendar.leaves"].search(
-            [("resource_id", "=", False)]
+            Domain("resource_id", "=", False)
         ).sudo().unlink()
         cls.sheet_model = cls.env["hr_timesheet.sheet"]
         cls.sheet_line_model = cls.env["hr_timesheet.sheet.line"]
@@ -339,15 +340,15 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         sheet_form = Form(self.sheet_model.with_user(self.user))
         self.assertEqual(len(sheet_form.line_ids), 7)
         self.assertEqual(len(sheet_form.timesheet_ids), 1)
-        self.assertTrue(self.aal_model.search([("id", "=", timesheet.id)]))
+        self.assertTrue(self.aal_model.search(Domain("id", "=", timesheet.id)))
 
         timesheets = [x.get("id") for x in sheet_form.timesheet_ids._records]
         sheet = sheet_form.save()
         # analytic line cleaned up on form save
-        self.assertFalse(self.aal_model.search([("id", "in", timesheets)]))
+        self.assertFalse(self.aal_model.search(Domain("id", "in", timesheets)))
         self.assertEqual(len(sheet.line_ids), 0)
         self.assertEqual(len(sheet.timesheet_ids), 0)
-        self.assertFalse(self.aal_model.search([("id", "=", timesheet.id)]))
+        self.assertFalse(self.aal_model.search(Domain("id", "=", timesheet.id)))
 
     @mute_logger("odoo.models.unlink")
     def test_4(self):
@@ -384,7 +385,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         self.assertEqual(len(sheet.timesheet_ids), 2)
 
         timesheet_1_or_2 = self.aal_model.search(
-            [("id", "in", [timesheet_1.id, timesheet_2.id])]
+            Domain("id", "in", [timesheet_1.id, timesheet_2.id])
         )
         self.assertEqual(len(timesheet_1_or_2), 1)
         self.assertEqual(timesheet_1_or_2.unit_amount, 1.0)
@@ -405,7 +406,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
                 self.assertEqual(len(sheet.new_line_ids), 1)
         self.assertEqual(line.unit_amount, 0.0)
         self.assertEqual(len(sheet.timesheet_ids), 1)
-        self.assertFalse(self.aal_model.search([("id", "=", timesheet_1_or_2.id)]))
+        self.assertFalse(self.aal_model.search(Domain("id", "=", timesheet_1_or_2.id)))
 
         timesheet_3.name = empty_name
         with Form(sheet.with_user(self.user)) as sheet_form:
@@ -416,7 +417,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         sheet.with_context(sheet_write=True)._compute_line_ids()
         self.assertEqual(len(sheet.timesheet_ids), 1)
         self.assertEqual(len(sheet.line_ids), 7)
-        self.assertFalse(self.aal_model.search([("id", "=", timesheet_3.id)]))
+        self.assertFalse(self.aal_model.search(Domain("id", "=", timesheet_3.id)))
 
     @mute_logger("odoo.models.unlink")
     def test_5(self):
@@ -461,7 +462,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         self.assertEqual(fields.first(sheet.timesheet_ids).unit_amount, 3.0)
 
         timesheet_1_or_2 = self.aal_model.search(
-            [("id", "in", [timesheet_1.id, timesheet_2.id])]
+            Domain("id", "in", [timesheet_1.id, timesheet_2.id])
         )
         self.assertEqual(len(timesheet_1_or_2), 1)
         self.assertEqual(timesheet_1_or_2.unit_amount, 3.0)
@@ -557,7 +558,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         self.assertEqual(len(sheet.timesheet_ids), 3)
 
         timesheet_1_or_2 = self.aal_model.search(
-            [("id", "in", [timesheet_1.id, timesheet_2.id])]
+            Domain("id", "in", [timesheet_1.id, timesheet_2.id])
         )
         self.assertFalse(timesheet_1_or_2)
 
@@ -575,7 +576,7 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         self.assertEqual(line.unit_amount, 3.0)
 
         timesheet_3_4_and_5 = self.aal_model.search(
-            [("id", "in", [timesheet_3.id, timesheet_4.id, timesheet_5.id])]
+            Domain("id", "in", [timesheet_3.id, timesheet_4.id, timesheet_5.id])
         )
         self.assertEqual(len(timesheet_3_4_and_5), 3)
 
@@ -966,25 +967,25 @@ class TestHrTimesheetSheet(TestHrTimesheetSheetCommon):
         self.assertFalse(sheet.with_user(self.user_3).can_review)
         self.assertEqual(
             self.sheet_model.with_user(self.user_3).search_count(
-                [("can_review", "=", True)]
+                Domain("can_review", "=", True)
             ),
             0,
         )
         self.assertEqual(
             self.sheet_model.with_user(self.user_3).search_count(
-                [("can_review", "!=", False)]
+                Domain("can_review", "!=", False)
             ),
             0,
         )
         self.assertEqual(
             self.sheet_model.with_user(self.user_3).search_count(
-                [("can_review", "=", False)]
+                Domain("can_review", "=", False)
             ),
             1,
         )
         self.assertEqual(
             self.sheet_model.with_user(self.user_3).search_count(
-                [("can_review", "!=", True)]
+                Domain("can_review", "!=", True)
             ),
             1,
         )

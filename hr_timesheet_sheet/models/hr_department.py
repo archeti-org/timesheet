@@ -3,6 +3,7 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.fields import Domain
 
 
 class HrDepartment(models.Model):
@@ -14,7 +15,12 @@ class HrDepartment(models.Model):
 
     def _compute_timesheet_to_approve(self):
         timesheet_data = self.env["hr_timesheet.sheet"].read_group(
-            [("department_id", "in", self.ids), ("state", "=", "confirm")],
+            Domain.AND(
+                [
+                    Domain("department_id", "in", self.ids),
+                    Domain("state", "=", "confirm"),
+                ]
+            ),
             ["department_id"],
             ["department_id"],
         )
@@ -30,11 +36,13 @@ class HrDepartment(models.Model):
         for rec in self.sudo().filtered("company_id"):
             for field in [
                 rec.env["hr_timesheet.sheet"].search(
-                    [
-                        ("department_id", "=", rec.id),
-                        ("company_id", "!=", rec.company_id.id),
-                        ("company_id", "!=", False),
-                    ],
+                    Domain.AND(
+                        [
+                            Domain("department_id", "=", rec.id),
+                            Domain("company_id", "!=", rec.company_id.id),
+                            Domain("company_id", "!=", False),
+                        ]
+                    ),
                     limit=1,
                 )
             ]:
