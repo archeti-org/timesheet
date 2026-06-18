@@ -331,11 +331,11 @@ class Sheet(models.Model):
         self.ensure_one()
         res = self.env["res.users"].browse(SUPERUSER_ID)
         if self.review_policy == "hr":
-            res |= self.env.ref("hr.group_hr_user").users
+            res |= self.env.ref("hr.group_hr_user").user_ids
         elif self.review_policy == "hr_manager":
-            res |= self.env.ref("hr.group_hr_manager").users
+            res |= self.env.ref("hr.group_hr_manager").user_ids
         elif self.review_policy == "timesheet_manager":
-            res |= self.env.ref("hr_timesheet.group_hr_timesheet_approver").users
+            res |= self.env.ref("hr_timesheet.group_hr_timesheet_approver").user_ids
         return res
 
     def _get_timesheet_sheet_company(self):
