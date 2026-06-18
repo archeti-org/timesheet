@@ -728,7 +728,7 @@ class Sheet(models.Model):
             rows = self.line_ids.filtered(lambda line, name=name: line.value_y == name)
             if not rows:
                 continue
-            row = fields.first(rows)
+            row = next(iter(rows))
             if delete_empty_rows and self._is_add_line(row):
                 check = any([line.unit_amount for line in rows])
             else:
