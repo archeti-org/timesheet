@@ -197,19 +197,14 @@ class Sheet(models.Model):
 
     @api.model
     def _search_can_review(self, operator, value):
-        def check_in(users):
-            return self.env.user in users
-
-        def check_not_in(users):
-            return self.env.user not in users
-
-        if (operator == "=" and value) or (operator in ["<>", "!="] and not value):
-            check = check_in
-        else:
-            check = check_not_in
+        # The ORM now transforms all non-trivial conditions to
+        #   `(x, 'in', [True])`, or `(x, 'not in', [True])`
+        #   and uses `~Domain(_search_xxx('in', value))` for `not in`.
+        if not (operator == "in" and list(value) == [True]):
+            return NotImplemented
 
         sheets = self.search(Domain(True)).filtered(
-            lambda sheet: check(sheet._get_possible_reviewers())
+            lambda sheet: self.env.user in sheet._get_possible_reviewers()
         )
         return Domain("id", "in", sheets.ids)
 
