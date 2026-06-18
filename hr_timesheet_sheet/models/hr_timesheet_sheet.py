@@ -208,7 +208,9 @@ class Sheet(models.Model):
         else:
             check = check_not_in
 
-        sheets = self.filtered(lambda sheet: check(sheet._get_possible_reviewers()))
+        sheets = self.search(Domain(True)).filtered(
+            lambda sheet: check(sheet._get_possible_reviewers())
+        )
         return Domain("id", "in", sheets.ids)
 
     @api.depends("name", "employee_id")
