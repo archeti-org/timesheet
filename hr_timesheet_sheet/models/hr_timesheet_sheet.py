@@ -49,15 +49,19 @@ class Sheet(models.Model):
 
     def _default_employee(self):
         company = self.env.company
-        return self.env["hr.employee"].search(
-            Domain.AND(
-                [
-                    Domain("user_id", "=", self.env.uid),
-                    Domain("company_id", "in", [company.id, False]),
-                ]
-            ),
-            limit=1,
-            order="company_id ASC",
+        return (
+            self.env["hr.employee"]
+            .sudo()
+            .search(
+                Domain.AND(
+                    [
+                        Domain("user_id", "=", self.env.uid),
+                        Domain("company_id", "in", [company.id, False]),
+                    ]
+                ),
+                limit=1,
+                order="company_id ASC",
+            )
         )
 
     def _default_department_id(self):
